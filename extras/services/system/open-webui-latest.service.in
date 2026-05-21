@@ -1,0 +1,18 @@
+[Unit]
+Description=Open WebUI native latest via uvx
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=@USER@
+Group=@GROUP@
+WorkingDirectory=@HOME@
+Environment="PATH=@HOME@/.local/bin:@HOME@/.cargo/bin:/usr/local/bin:/usr/bin:/bin"
+EnvironmentFile=/etc/default/open-webui-latest
+ExecStart=@HOME@/.local/bin/uvx --python ${OPEN_WEBUI_PYTHON} open-webui@latest serve --host ${OPEN_WEBUI_HOST} --port ${OPEN_WEBUI_PORT}
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

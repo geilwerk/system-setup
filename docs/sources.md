@@ -7,6 +7,13 @@ This file tracks the official source used for each installer command. The goal i
 - `curl`, `ca-certificates`, `gnupg`, `git`, `build-essential`, `pandoc`, and other base packages use Ubuntu apt packages.
 - No Snap packages are installed by this script.
 
+Ubuntu 26.04 reference notes checked while revisiting service and Kanata behavior:
+
+- <https://documentation.ubuntu.com/release-notes/26.04/>
+- <https://documentation.ubuntu.com/release-notes/26.04/changes-since-previous-interim/>
+
+The 26.04 notes did not surface a specific `uinput`/`input` group change, so the Kanata installer keeps the upstream `uinput` default and exposes a local override for VM/laptop testing.
+
 ## Rust
 
 Source: <https://www.rust-lang.org/tools/install>
@@ -34,6 +41,18 @@ nvm install --lts
 ```
 
 The script defaults to `NVM_VERSION=0.40.3` and installs the latest LTS Node through nvm.
+
+## uv
+
+Source: <https://docs.astral.sh/uv/getting-started/installation/>
+
+Command:
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+The main installer uses Astral's standalone installer so `uv` and `uvx` are available for Python-based tools and the optional extras installer.
 
 ## Conda via Miniconda
 
@@ -68,7 +87,7 @@ cargo install kanata
 install -D -m 0644 kanata-setup/kanata.kbd "$HOME/.config/kanata/kanata.kbd"
 ```
 
-The installer also sets up the Linux `uinput` permissions and a user systemd service.
+The installer also sets up the Linux `uinput` permissions and a user systemd service. Kanata's current Linux setup docs use the `uinput` group in the udev rule, so the installer keeps that default while allowing `KANATA_UINPUT_GROUP=input` for Ubuntu 26.04 testing if the local device permissions need it.
 
 ## Ollama
 
@@ -285,6 +304,47 @@ docker run -d -p 3000:8080 --add-host=host.docker.internal:host-gateway -v open-
 ```
 
 For NVIDIA GPU support, set `OPEN_WEBUI_GPU=1`; the installer uses the `:cuda` image and adds `--gpus all`.
+
+The optional extras installer also supports native Open WebUI services. The upstream quick start documents the uv path as:
+
+```bash
+DATA_DIR=~/.open-webui uvx --python 3.11 open-webui@latest serve
+```
+
+The extras installer uses that command family for `open-webui-latest.service`, and uses `uv tool install open-webui` for a separate `open-webui-stable.service` that does not auto-resolve `@latest` on every service start.
+
+## mcpo
+
+Sources:
+
+- <https://docs.openwebui.com/features/extensibility/plugin/tools/openapi-servers/mcp/>
+- <https://github.com/open-webui/mcpo>
+
+Command family:
+
+```bash
+uvx mcpo --port 8000 --api-key "your-secret-key" -- your_mcp_server_command
+```
+
+The extras installer templates a user service and a small `mcpo-gateway` wrapper. By default it runs Docker Desktop's MCP gateway command behind mcpo:
+
+```bash
+uvx mcpo --host 0.0.0.0 --port 8000 --api-key "$MCPO_API_KEY" -- docker --context desktop-linux mcp gateway run
+```
+
+Set `MCPO_API_KEY` before installing, or edit `~/.config/mcpo/mcpo.env` after installation and enable the service manually.
+
+## Open Terminal
+
+Source: <https://docs.openwebui.com/features/open-terminal/setup/installation/>
+
+Command family:
+
+```bash
+uvx open-terminal run --host 0.0.0.0 --port 8000 --api-key your-secret-key
+```
+
+The extras installer templates a system service using the bare-metal uvx command. It does not enable or start the service until `OPEN_TERMINAL_API_KEY` is configured.
 
 ## Telegram
 

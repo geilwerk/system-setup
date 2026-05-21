@@ -1,0 +1,16 @@
+[Unit]
+Description=mcpo MCP-to-OpenAPI gateway
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h
+Environment="PATH=%h/.local/bin:%h/.cargo/bin:/usr/local/bin:/usr/bin:/bin"
+Environment=UV_CACHE_DIR=%h/.cache/uv
+EnvironmentFile=%h/.config/mcpo/mcpo.env
+ExecStart=%h/.local/bin/mcpo-gateway
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=default.target

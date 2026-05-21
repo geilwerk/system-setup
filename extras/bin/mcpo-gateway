@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+: "${MCPO_API_KEY:?Set MCPO_API_KEY in ~/.config/mcpo/mcpo.env}"
+
+MCPO_HOST="${MCPO_HOST:-0.0.0.0}"
+MCPO_PORT="${MCPO_PORT:-8000}"
+MCPO_BACKEND_COMMAND="${MCPO_BACKEND_COMMAND:-docker --context desktop-linux mcp gateway run}"
+
+read -r -a backend_args <<< "$MCPO_BACKEND_COMMAND"
+if ((${#backend_args[@]} == 0)); then
+  printf 'MCPO_BACKEND_COMMAND is empty.\n' >&2
+  exit 1
+fi
+
+exec uvx mcpo \
+  --host "$MCPO_HOST" \
+  --port "$MCPO_PORT" \
+  --api-key "$MCPO_API_KEY" \
+  -- "${backend_args[@]}"

@@ -4,7 +4,8 @@ set -euo pipefail
 # --- Configuration Variables ---
 KANATA_CONFIG_DIR="$HOME/.config/kanata"
 KANATA_CONFIG_FILE="$KANATA_CONFIG_DIR/kanata.kbd"
-UDEV_RULE_FILE="/etc/udev/rules.d/99-input.rules"
+KANATA_UINPUT_GROUP="${KANATA_UINPUT_GROUP:-uinput}"
+UDEV_RULE_FILE="/etc/udev/rules.d/99-kanata-uinput.rules"
 MODPROBE_CONF_FILE="/etc/modules-load.d/uinput.conf"
 SYSTEMD_SERVICE_DIR="$HOME/.config/systemd/user"
 SYSTEMD_SERVICE_FILE="$SYSTEMD_SERVICE_DIR/kanata.service"
@@ -40,7 +41,7 @@ check_kanata_executable() {
 }
 
 add_user_to_groups() {
-    log_info "Adding user '$USER' to 'input' and 'uinput' groups..."
+    log_info "Adding user '$USER' to 'input', 'uinput', and '$KANATA_UINPUT_GROUP' groups..."
     # Create uinput group if it doesn't exist (idempotent)
     if ! getent group uinput > /dev/null; then
         sudo groupadd uinput || log_error "Failed to create 'uinput' group."
@@ -65,12 +66,21 @@ add_user_to_groups() {
         log_info "'$USER' is already in 'uinput' group."
     fi
 
+    # Add user to the configured uinput device group (idempotent)
+    sudo groupadd -f "$KANATA_UINPUT_GROUP" || log_error "Failed to ensure '$KANATA_UINPUT_GROUP' group."
+    if ! groups "$USER" | grep -qw "$KANATA_UINPUT_GROUP"; then
+        sudo usermod -aG "$KANATA_UINPUT_GROUP" "$USER" || log_error "Failed to add '$USER' to '$KANATA_UINPUT_GROUP' group."
+        log_info "Added '$USER' to '$KANATA_UINPUT_GROUP' group."
+    else
+        log_info "'$USER' is already in '$KANATA_UINPUT_GROUP' group."
+    fi
+
     log_warn "You will need to log out and log back in for group changes to take effect!"
 }
 
 create_udev_rule() {
     log_info "Creating/updating udev rule for uinput permissions..."
-    echo 'KERNEL=="uinput", MODE="0660", GROUP="uinput", OPTIONS+="static_node=uinput"' | sudo tee "$UDEV_RULE_FILE" > /dev/null || log_error "Failed to create udev rule."
+    printf 'KERNEL=="uinput", MODE="0660", GROUP="%s", OPTIONS+="static_node=uinput"\n' "$KANATA_UINPUT_GROUP" | sudo tee "$UDEV_RULE_FILE" > /dev/null || log_error "Failed to create udev rule."
 
     log_info "Reloading udev rules and triggering changes..."
     sudo udevadm control --reload-rules || log_error "Failed to reload udev rules."

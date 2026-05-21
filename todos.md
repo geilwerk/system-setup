@@ -5,6 +5,9 @@ Casual parking lot for things to add, fix, or sanity-check while this installer 
 ## Add Next
 
 - [x] Add Open WebUI.
+- [x] Add uv/uvx.
+- [x] Add a separate extras installer for native Open WebUI service experiments.
+- [x] Add optional mcpo and Open Terminal service templates without committing local secrets.
 - [x] Add opencode.
 - [x] Add NVIDIA Container Toolkit.
 - [x] Add Docker Desktop setup step to put the user in the `kvm` group.
@@ -18,7 +21,14 @@ Casual parking lot for things to add, fix, or sanity-check while this installer 
 
 ## Kanata Follow-Ups
 
-- [ ] Test Kanata on Ubuntu 26.04+ and document/fix the `input`/`uinput` group issue if it still exists.
+- [ ] Test Kanata on Ubuntu 26.04+ with the default `KANATA_UINPUT_GROUP=uinput`.
+- [ ] If 26.04 needs the laptop workaround, rerun Kanata setup with `KANATA_UINPUT_GROUP=input` and make that the documented path.
+
+## Extras Follow-Ups
+
+- [ ] Decide whether native Open WebUI should stay as two services, or whether Docker should remain the only everyday Open WebUI path.
+- [ ] Decide whether `mcpo` and Open Terminal are still useful now that Open WebUI has native MCP support.
+- [ ] Add uninstall/disable helpers for extras services once the VM shape settles.
 
 ## Installer Utility Ideas
 

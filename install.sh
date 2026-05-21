@@ -11,6 +11,7 @@ NVM_VERSION="${NVM_VERSION:-0.40.3}"
 MINICONDA_PREFIX="${MINICONDA_PREFIX:-$HOME/miniconda3}"
 KANATA_SOURCE_FILE="${KANATA_SOURCE_FILE:-$SCRIPT_DIR/kanata-setup/kanata.kbd}"
 KANATA_CONFIG_DIR="${KANATA_CONFIG_DIR:-$HOME/.config/kanata}"
+KANATA_UINPUT_GROUP="${KANATA_UINPUT_GROUP:-uinput}"
 COPYOUS_UUID="copyous@boerdereinar.dev"
 DEFAULT_OLLAMA_MODELS="glm-5.1:cloud kimi-k2.6:cloud gemini-3-flash-preview:cloud minimax-m2.7:cloud mistral-large-3:675b-cloud gemma4:31b-cloud qwen3.5:397b-cloud"
 OLLAMA_MODELS="${OLLAMA_MODELS-$DEFAULT_OLLAMA_MODELS}"
@@ -32,6 +33,7 @@ TASK_ORDER=(
   base
   rust
   node_nvm
+  uv
   conda_miniconda
   kanata
   gnome_disable_key_repeat
@@ -72,6 +74,7 @@ Environment:
   NVM_VERSION=0.40.3
   MINICONDA_PREFIX=$HOME/miniconda3
   KANATA_SOURCE_FILE=./kanata-setup/kanata.kbd
+  KANATA_UINPUT_GROUP=uinput
   OLLAMA_MODELS="glm-5.1:cloud kimi-k2.6:cloud ..."
   ALLOW_UNSUPPORTED_DOCKER_DESKTOP=1
   DOCKER_PASS_GPG_ID=<gpg-key-id>
@@ -85,8 +88,9 @@ list_tasks() {
 base                 Core apt packages: curl, git, build-essential, gpg, etc.
 rust                 Rustup stable toolchain.
 node_nvm             nvm plus latest Node LTS.
+uv                   Astral uv and uvx standalone installer.
 conda_miniconda      Miniconda user install for conda.
-kanata               Kanata via cargo, repo config, uinput, user service.
+kanata               Kanata via cargo, repo config, uinput/input permissions, user service.
 gnome_disable_key_repeat  Disable GNOME repeat keys for Kanata.
 ollama               Ollama official install script plus configured model pulls.
 codex                OpenAI Codex CLI via npm.
@@ -131,7 +135,9 @@ die() {
 }
 
 run() {
-  log "$*"
+  local display
+  printf -v display '%q ' "$@"
+  log "${display% }"
   if (( DRY_RUN )); then
     return 0
   fi
@@ -139,7 +145,9 @@ run() {
 }
 
 run_optional() {
-  log "$*"
+  local display
+  printf -v display '%q ' "$@"
+  log "${display% }"
   if (( DRY_RUN )); then
     return 0
   fi
@@ -289,13 +297,14 @@ select_with_tui() {
     "base" "Core apt packages: curl, git, build-essential, gpg, jq" ON \
     "rust" "Rustup stable toolchain" ON \
     "node_nvm" "nvm plus latest Node LTS" ON \
+    "uv" "Astral uv and uvx standalone installer" ON \
     "conda_miniconda" "Miniconda user install for conda" ON \
     "pandoc" "Pandoc from Ubuntu apt" ON
 
   select_category \
     "Ubuntu Setup: Keyboard" \
     "Kanata needs Rust/cargo and a logout after group changes." \
-    "kanata" "Kanata via cargo, repo config, uinput, user service" ON
+    "kanata" "Kanata via cargo, repo config, uinput/input permissions, user service" ON
 
   select_category \
     "Ubuntu Setup: AI CLIs" \
@@ -568,6 +577,27 @@ install_node_nvm() {
   fi
 }
 
+source_local_bin() {
+  export PATH="$HOME/.local/bin:$PATH"
+}
+
+install_uv() {
+  source_local_bin
+  if ! has_command uv; then
+    run_bash "curl -LsSf https://astral.sh/uv/install.sh | sh"
+  else
+    log "uv is already installed at $(command -v uv)."
+  fi
+
+  if (( DRY_RUN )); then
+    return
+  fi
+
+  source_local_bin
+  has_command uv || die "uv was not found after installation."
+  run uv --version
+}
+
 miniconda_arch() {
   case "$(uname -m)" in
     x86_64|amd64)
@@ -627,12 +657,14 @@ install_kanata() {
 
   run sudo groupadd -f input
   run sudo groupadd -f uinput
+  run sudo groupadd -f "$KANATA_UINPUT_GROUP"
   run sudo usermod -aG input "$USER"
   run sudo usermod -aG uinput "$USER"
+  run sudo usermod -aG "$KANATA_UINPUT_GROUP" "$USER"
 
   local udev_tmp
   udev_tmp="$(mktemp)"
-  printf '%s\n' 'KERNEL=="uinput", MODE="0660", GROUP="uinput", OPTIONS+="static_node=uinput"' > "$udev_tmp"
+  printf 'KERNEL=="uinput", MODE="0660", GROUP="%s", OPTIONS+="static_node=uinput"\n' "$KANATA_UINPUT_GROUP" > "$udev_tmp"
   install_with_backup "$udev_tmp" "/tmp/99-kanata-uinput.rules" 0644
   run sudo install -D -m 0644 "/tmp/99-kanata-uinput.rules" "/etc/udev/rules.d/99-kanata-uinput.rules"
   rm -f "$udev_tmp" /tmp/99-kanata-uinput.rules
@@ -1113,6 +1145,7 @@ run_task() {
     base) install_base ;;
     rust) install_rust ;;
     node_nvm) install_node_nvm ;;
+    uv) install_uv ;;
     conda_miniconda) install_conda_miniconda ;;
     kanata) install_kanata ;;
     ollama) install_ollama ;;

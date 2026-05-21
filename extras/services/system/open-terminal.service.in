@@ -1,0 +1,18 @@
+[Unit]
+Description=Open Terminal via uvx
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=@USER@
+Group=@GROUP@
+WorkingDirectory=@HOME@
+Environment="PATH=@HOME@/.local/bin:@HOME@/.cargo/bin:/usr/local/bin:/usr/bin:/bin"
+EnvironmentFile=/etc/default/open-terminal
+ExecStart=@HOME@/.local/bin/uvx open-terminal run --host ${OPEN_TERMINAL_HOST} --port ${OPEN_TERMINAL_PORT} --api-key ${OPEN_TERMINAL_API_KEY}
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
