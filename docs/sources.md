@@ -1,0 +1,217 @@
+# Install Sources
+
+This file tracks the official source used for each installer command. The goal is to keep the shell script auditable and easy to revise after VM testing.
+
+## Core
+
+- `curl`, `ca-certificates`, `gnupg`, `git`, `build-essential`, `pandoc`, and other base packages use Ubuntu apt packages.
+- No Snap packages are installed by this script.
+
+## Rust
+
+Source: <https://www.rust-lang.org/tools/install>
+
+Command family:
+
+```bash
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+```
+
+The installer runs the standard Rustup script with `-y` for unattended setup.
+
+## Node via nvm
+
+Sources:
+
+- <https://nodejs.org/en/download>
+- <https://github.com/nvm-sh/nvm>
+
+Command family:
+
+```bash
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
+nvm install --lts
+```
+
+The script defaults to `NVM_VERSION=0.40.3` and installs the latest LTS Node through nvm.
+
+## Conda via Miniconda
+
+Sources:
+
+- <https://www.anaconda.com/docs/getting-started/miniconda/install/linux-install>
+- <https://www.anaconda.com/docs/getting-started/advanced-install/silent-mode>
+
+Command family:
+
+```bash
+curl -O https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+bash ./Miniconda3-latest-Linux-x86_64.sh -b -p "$HOME/miniconda3"
+source "$HOME/miniconda3/bin/activate"
+conda init --all
+conda config --set auto_activate_base false
+```
+
+The installer uses Miniconda rather than the full Anaconda Distribution so this remains a lightweight `conda` install. On ARM64 Linux it uses the official `Linux-aarch64` installer filename.
+
+## Kanata
+
+Sources:
+
+- <https://github.com/jtroo/kanata>
+- <https://github.com/nanocyte/kanata-kde>
+
+Command family:
+
+```bash
+cargo install kanata
+git clone https://github.com/nanocyte/kanata-kde
+```
+
+The installer also sets up the Linux `uinput` permissions and a user systemd service.
+
+## Ollama
+
+Source: <https://ollama.com/download/linux>
+
+Command:
+
+```bash
+curl -fsSL https://ollama.com/install.sh | sh
+```
+
+## OpenAI Codex CLI
+
+Source: <https://developers.openai.com/codex/cli/>
+
+Command:
+
+```bash
+npm install -g @openai/codex
+```
+
+## Claude Code
+
+Source: <https://docs.anthropic.com/en/docs/claude-code/setup>
+
+Command:
+
+```bash
+curl -fsSL https://claude.ai/install.sh | bash
+```
+
+The script uses the native installer instead of npm to avoid npm permission and Node version coupling.
+
+## Flatpak and Flathub
+
+Sources:
+
+- <https://flatpak.org/setup/Ubuntu>
+- <https://flathub.org/setup/Ubuntu>
+
+Command family:
+
+```bash
+sudo apt install flatpak gnome-software-plugin-flatpak
+flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+```
+
+The script also installs `gnome-software` because this setup targets Ubuntu GNOME desktop.
+
+## GNOME Extension Manager
+
+Source: <https://flathub.org/apps/com.mattjakeman.ExtensionManager>
+
+Command:
+
+```bash
+flatpak install flathub com.mattjakeman.ExtensionManager
+```
+
+## Copyous GNOME Extension
+
+Source: <https://extensions.gnome.org/extension/7381/copyous/>
+
+UUID:
+
+```text
+copyous@boerdereinar.dev
+```
+
+The installer uses the official extensions.gnome.org metadata endpoint for the current GNOME Shell major version, downloads the extension zip, installs it with `gnome-extensions`, and attempts to enable it.
+
+## Google Chrome
+
+Source: <https://www.google.com/chrome/>
+
+Command family:
+
+```bash
+curl -fsSLo google-chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+sudo apt install ./google-chrome.deb
+```
+
+Google's deb package installs the Chrome apt source for future updates.
+
+## Visual Studio Code
+
+Source: <https://code.visualstudio.com/docs/setup/linux>
+
+Command family:
+
+```bash
+sudo install -D -m 644 microsoft.gpg /usr/share/keyrings/microsoft.gpg
+sudo install -D -m 644 vscode.sources /etc/apt/sources.list.d/vscode.sources
+sudo apt install code
+```
+
+The script uses Microsoft's signed apt repository flow.
+
+## GitHub CLI
+
+Source: <https://github.com/cli/cli/blob/trunk/docs/install_linux.md>
+
+Command family:
+
+```bash
+sudo mkdir -p -m 755 /etc/apt/keyrings
+wget -nv -O- https://cli.github.com/packages/githubcli-archive-keyring.gpg
+sudo apt install gh
+```
+
+The script uses the signed apt repository flow from the GitHub CLI docs.
+
+## Docker Engine
+
+Source: <https://docs.docker.com/engine/install/ubuntu/>
+
+Command family:
+
+```bash
+sudo install -m 0755 -d /etc/apt/keyrings
+sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+sudo apt install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+```
+
+## Docker Desktop
+
+Source: <https://docs.docker.com/desktop/setup/install/linux/ubuntu/>
+
+Command family:
+
+```bash
+curl -fsSLo docker-desktop-amd64.deb https://desktop.docker.com/linux/main/amd64/docker-desktop-amd64.deb
+sudo apt install ./docker-desktop-amd64.deb
+```
+
+Docker Desktop official support currently lists Ubuntu 26.04 and 24.04. The installer warns and skips it on 25.10 by default.
+
+## Telegram
+
+Source: <https://flathub.org/apps/org.telegram.desktop>
+
+Command:
+
+```bash
+flatpak install flathub org.telegram.desktop
+```
