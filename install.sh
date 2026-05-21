@@ -9,8 +9,7 @@ LOG_FILE="$LOG_DIR/install-$LOG_STAMP.log"
 
 NVM_VERSION="${NVM_VERSION:-0.40.3}"
 MINICONDA_PREFIX="${MINICONDA_PREFIX:-$HOME/miniconda3}"
-KANATA_REPO="${KANATA_REPO:-https://github.com/nanocyte/kanata-kde}"
-KANATA_SRC_DIR="${KANATA_SRC_DIR:-$HOME/.local/src/kanata-kde}"
+KANATA_SOURCE_FILE="${KANATA_SOURCE_FILE:-$SCRIPT_DIR/kanata-setup/kanata.kbd}"
 KANATA_CONFIG_DIR="${KANATA_CONFIG_DIR:-$HOME/.config/kanata}"
 COPYOUS_UUID="copyous@boerdereinar.dev"
 OPEN_WEBUI_CONTAINER="${OPEN_WEBUI_CONTAINER:-open-webui}"
@@ -70,7 +69,7 @@ Options:
 Environment:
   NVM_VERSION=0.40.3
   MINICONDA_PREFIX=$HOME/miniconda3
-  KANATA_REPO=https://github.com/nanocyte/kanata-kde
+  KANATA_SOURCE_FILE=./kanata-setup/kanata.kbd
   ALLOW_UNSUPPORTED_DOCKER_DESKTOP=1
   DOCKER_PASS_GPG_ID=<gpg-key-id>
   OPEN_WEBUI_PORT=3000
@@ -84,7 +83,7 @@ base                 Core apt packages: curl, git, build-essential, gpg, etc.
 rust                 Rustup stable toolchain.
 node_nvm             nvm plus latest Node LTS.
 conda_miniconda      Miniconda user install for conda.
-kanata               Kanata via cargo, config clone, uinput, user service.
+kanata               Kanata via cargo, repo config, uinput, user service.
 gnome_disable_key_repeat  Disable GNOME repeat keys for Kanata.
 ollama               Ollama official install script.
 codex                OpenAI Codex CLI via npm.
@@ -293,7 +292,7 @@ select_with_tui() {
   select_category \
     "Ubuntu Setup: Keyboard" \
     "Kanata needs Rust/cargo and a logout after group changes." \
-    "kanata" "Kanata via cargo, config clone, uinput, user service" ON
+    "kanata" "Kanata via cargo, repo config, uinput, user service" ON
 
   select_category \
     "Ubuntu Setup: AI CLIs" \
@@ -620,14 +619,8 @@ install_kanata() {
     log "kanata is already installed at $(command -v kanata)."
   fi
 
-  run mkdir -p "$(dirname "$KANATA_SRC_DIR")"
-  if [[ -d "$KANATA_SRC_DIR/.git" ]]; then
-    run git -C "$KANATA_SRC_DIR" pull --ff-only
-  else
-    run git clone "$KANATA_REPO" "$KANATA_SRC_DIR"
-  fi
-
-  install_with_backup "$KANATA_SRC_DIR/kanata.kbd" "$KANATA_CONFIG_DIR/kanata.kbd" 0644
+  [[ -f "$KANATA_SOURCE_FILE" ]] || die "Kanata source config not found: $KANATA_SOURCE_FILE"
+  install_with_backup "$KANATA_SOURCE_FILE" "$KANATA_CONFIG_DIR/kanata.kbd" 0644
 
   run sudo groupadd -f input
   run sudo groupadd -f uinput

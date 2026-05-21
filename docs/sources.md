@@ -59,13 +59,13 @@ The installer uses Miniconda rather than the full Anaconda Distribution so this 
 Sources:
 
 - <https://github.com/jtroo/kanata>
-- <https://github.com/nanocyte/kanata-kde>
+- In-repo config: `kanata-setup/kanata.kbd`
 
 Command family:
 
 ```bash
 cargo install kanata
-git clone https://github.com/nanocyte/kanata-kde
+install -D -m 0644 kanata-setup/kanata.kbd "$HOME/.config/kanata/kanata.kbd"
 ```
 
 The installer also sets up the Linux `uinput` permissions and a user systemd service.

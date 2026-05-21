@@ -48,6 +48,7 @@ Dependency-like items such as Node and Rust can be unchecked, but the installer 
 ## Layout
 
 - [install.sh](install.sh): interactive installer.
+- [kanata-setup](kanata-setup): Kanata config and legacy setup notes used by the installer.
 - [todos.md](todos.md): casual backlog for things to add or revisit.
 - [docs/sources.md](docs/sources.md): source links and official commands used by this draft.
 - [scripts](scripts): troubleshooting and helper scripts.
