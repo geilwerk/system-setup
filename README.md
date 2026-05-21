@@ -43,6 +43,7 @@ Dependency-like items such as Node and Rust can be unchecked, but the installer 
 ## Layout
 
 - [install.sh](install.sh): interactive installer.
+- [todos.md](todos.md): casual backlog for things to add or revisit.
 - [docs/sources.md](docs/sources.md): source links and official commands used by this draft.
 - [services/user](services/user): user systemd units copied by the installer.
 - [services/system](services/system): placeholder for future system services.
