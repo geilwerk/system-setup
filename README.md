@@ -41,6 +41,7 @@ Dependency-like items such as Node and Rust can be unchecked, but the installer 
 - If Docker Desktop still silently fails from the app launcher, run `./scripts/docker-desktop-debug.sh` for service logs and KVM checks.
 - Docker Engine and Docker Desktop can coexist, but Docker recommends stopping Engine while using Desktop if ports or resources get weird: `sudo systemctl stop docker docker.socket containerd`.
 - Open WebUI is installed as a Docker container at `http://localhost:3000` by default. Set `OPEN_WEBUI_GPU=1` to use the CUDA image.
+- Ollama pulls the configured cloud model list after install. Override with `OLLAMA_MODELS="model-a model-b"` or set `OLLAMA_MODELS=""` to skip pulls.
 - Conda is installed through the official Miniconda Linux installer at `~/miniconda3` by default. Override with `MINICONDA_PREFIX=/path/to/miniconda3`.
 - Kanata group changes require logging out and back in before the user service can fully work.
 - Flatpak/Flathub and GNOME Shell extension changes may also need a logout or reboot before GNOME Software and extensions notice everything.

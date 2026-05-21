@@ -80,6 +80,20 @@ Command:
 curl -fsSL https://ollama.com/install.sh | sh
 ```
 
+Configured model pulls:
+
+```bash
+ollama pull glm-5.1:cloud
+ollama pull kimi-k2.6:cloud
+ollama pull gemini-3-flash-preview:cloud
+ollama pull minimax-m2.7:cloud
+ollama pull mistral-large-3:675b-cloud
+ollama pull gemma4:31b-cloud
+ollama pull qwen3.5:397b-cloud
+```
+
+Override the default model list with `OLLAMA_MODELS="model-a model-b"`, or set `OLLAMA_MODELS=""` to skip model pulls.
+
 ## OpenAI Codex CLI
 
 Source: <https://developers.openai.com/codex/cli/>

@@ -12,6 +12,8 @@ MINICONDA_PREFIX="${MINICONDA_PREFIX:-$HOME/miniconda3}"
 KANATA_SOURCE_FILE="${KANATA_SOURCE_FILE:-$SCRIPT_DIR/kanata-setup/kanata.kbd}"
 KANATA_CONFIG_DIR="${KANATA_CONFIG_DIR:-$HOME/.config/kanata}"
 COPYOUS_UUID="copyous@boerdereinar.dev"
+DEFAULT_OLLAMA_MODELS="glm-5.1:cloud kimi-k2.6:cloud gemini-3-flash-preview:cloud minimax-m2.7:cloud mistral-large-3:675b-cloud gemma4:31b-cloud qwen3.5:397b-cloud"
+OLLAMA_MODELS="${OLLAMA_MODELS-$DEFAULT_OLLAMA_MODELS}"
 OPEN_WEBUI_CONTAINER="${OPEN_WEBUI_CONTAINER:-open-webui}"
 OPEN_WEBUI_IMAGE="${OPEN_WEBUI_IMAGE:-ghcr.io/open-webui/open-webui:main}"
 OPEN_WEBUI_GPU_IMAGE="${OPEN_WEBUI_GPU_IMAGE:-ghcr.io/open-webui/open-webui:cuda}"
@@ -70,6 +72,7 @@ Environment:
   NVM_VERSION=0.40.3
   MINICONDA_PREFIX=$HOME/miniconda3
   KANATA_SOURCE_FILE=./kanata-setup/kanata.kbd
+  OLLAMA_MODELS="glm-5.1:cloud kimi-k2.6:cloud ..."
   ALLOW_UNSUPPORTED_DOCKER_DESKTOP=1
   DOCKER_PASS_GPG_ID=<gpg-key-id>
   OPEN_WEBUI_PORT=3000
@@ -85,7 +88,7 @@ node_nvm             nvm plus latest Node LTS.
 conda_miniconda      Miniconda user install for conda.
 kanata               Kanata via cargo, repo config, uinput, user service.
 gnome_disable_key_repeat  Disable GNOME repeat keys for Kanata.
-ollama               Ollama official install script.
+ollama               Ollama official install script plus configured model pulls.
 codex                OpenAI Codex CLI via npm.
 opencode             OpenCode official install script.
 claude_code          Claude Code native installer.
@@ -297,7 +300,7 @@ select_with_tui() {
   select_category \
     "Ubuntu Setup: AI CLIs" \
     "Codex expects npm. Claude Code uses Anthropic's native installer." \
-    "ollama" "Ollama official install script" ON \
+    "ollama" "Ollama official install script plus model pulls" ON \
     "codex" "OpenAI Codex CLI via npm" ON \
     "opencode" "OpenCode official install script" ON \
     "claude_code" "Claude Code native installer" ON
@@ -653,11 +656,35 @@ install_kanata() {
 }
 
 install_ollama() {
-  if has_command ollama; then
+  if ! has_command ollama; then
+    run_bash "curl -fsSL https://ollama.com/install.sh | sh"
+  else
     log "ollama is already installed at $(command -v ollama)."
+  fi
+
+  pull_ollama_models
+}
+
+pull_ollama_models() {
+  local -a models
+  local model
+
+  if [[ -z "${OLLAMA_MODELS//[[:space:]]/}" ]]; then
+    log "No Ollama models configured for pulling."
     return
   fi
-  run_bash "curl -fsSL https://ollama.com/install.sh | sh"
+
+  if (( ! DRY_RUN )); then
+    has_command ollama || die "ollama was not found after installation."
+  fi
+
+  local IFS=' '
+  read -r -a models <<< "$OLLAMA_MODELS"
+
+  for model in "${models[@]}"; do
+    [[ -n "$model" ]] || continue
+    run ollama pull "$model"
+  done
 }
 
 ensure_npm_for_current_shell() {
