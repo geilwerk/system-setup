@@ -4,15 +4,17 @@ Casual parking lot for things to add, fix, or sanity-check while this installer 
 
 ## Add Next
 
-- [ ] Add Open WebUI.
-- [ ] Add opencode.
-- [ ] Add NVIDIA Container Toolkit.
-- [ ] Add Docker Desktop setup step to put the user in the `kvm` group.
-- [ ] Investigate whether Docker Desktop setup should initialize `pass` with a new GPG key.
+- [x] Add Open WebUI.
+- [x] Add opencode.
+- [x] Add NVIDIA Container Toolkit.
+- [x] Add Docker Desktop setup step to put the user in the `kvm` group.
+- [x] Add Docker Desktop `pass` setup helper.
+- [ ] Decide whether we ever want fully automated Docker Desktop GPG key generation, or whether explicit `DOCKER_PASS_GPG_ID` is the right permanent boundary.
 
 ## Settings To Automate
 
-- [ ] Disable Ubuntu/GNOME repeat keys if possible, because system repeat interferes with Kanata repeat behavior.
+- [x] Disable Ubuntu/GNOME repeat keys if possible, because system repeat interferes with Kanata repeat behavior.
+- [ ] Add more GNOME settings once they come up during VM testing.
 
 ## Kanata Follow-Ups
 
@@ -34,4 +36,3 @@ Casual parking lot for things to add, fix, or sanity-check while this installer 
 ## Working Rule
 
 - [ ] When adding a new installer item, also add its official source and command notes to `docs/sources.md`.
-

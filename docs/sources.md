@@ -102,6 +102,18 @@ curl -fsSL https://claude.ai/install.sh | bash
 
 The script uses the native installer instead of npm to avoid npm permission and Node version coupling.
 
+## OpenCode
+
+Source: <https://opencode.ai/docs/>
+
+Command:
+
+```bash
+curl -fsSL https://opencode.ai/install | bash
+```
+
+The installer uses OpenCode's official install script. The docs also list npm, Bun, pnpm, Yarn, Homebrew, Arch, Windows, and Docker options.
+
 ## Flatpak and Flathub
 
 Sources:
@@ -139,6 +151,22 @@ copyous@boerdereinar.dev
 ```
 
 The installer uses the official extensions.gnome.org metadata endpoint for the current GNOME Shell major version, downloads the extension zip, installs it with `gnome-extensions`, and attempts to enable it.
+
+## GNOME Repeat Keys
+
+Source: local GNOME settings schema, verified with:
+
+```bash
+gsettings list-keys org.gnome.desktop.peripherals.keyboard
+```
+
+Command:
+
+```bash
+gsettings set org.gnome.desktop.peripherals.keyboard repeat false
+```
+
+Kanata handles repeat behavior better than GNOME's system repeat for this keyboard setup, so the installer disables GNOME repeat keys when the setting is writable.
 
 ## Google Chrome
 
@@ -195,16 +223,54 @@ sudo apt install docker-ce docker-ce-cli containerd.io docker-buildx-plugin dock
 
 ## Docker Desktop
 
-Source: <https://docs.docker.com/desktop/setup/install/linux/ubuntu/>
+Sources:
+
+- <https://docs.docker.com/desktop/setup/install/linux/>
+- <https://docs.docker.com/desktop/setup/install/linux/ubuntu/>
+- <https://docs.docker.com/desktop/setup/sign-in/>
 
 Command family:
 
 ```bash
+sudo apt install cpu-checker dbus-user-session gnome-terminal pass qemu-system-x86 qemu-utils uidmap
+sudo usermod -aG kvm "$USER"
 curl -fsSLo docker-desktop-amd64.deb https://desktop.docker.com/linux/main/amd64/docker-desktop-amd64.deb
 sudo apt install ./docker-desktop-amd64.deb
+systemctl --user start docker-desktop
 ```
 
 Docker Desktop official support currently lists Ubuntu 26.04 and 24.04. The installer warns and skips it on 25.10 by default.
+
+Docker Desktop for Linux runs a VM and needs KVM access. The installer adds the user to `kvm`, installs QEMU/KVM helper packages, checks `/dev/kvm`, and installs `pass` for credential storage. It does not auto-generate a GPG key by default; if `DOCKER_PASS_GPG_ID` is set, it runs `pass init "$DOCKER_PASS_GPG_ID"`.
+
+## NVIDIA Container Toolkit
+
+Source: <https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html>
+
+Command family:
+
+```bash
+curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
+curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list | sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
+sudo apt-get update
+sudo apt-get install -y nvidia-container-toolkit
+sudo nvidia-ctk runtime configure --runtime=docker
+sudo systemctl restart docker
+```
+
+The installer assumes NVIDIA drivers are already handled elsewhere, matching the broader setup assumption that hardware drivers are automatic.
+
+## Open WebUI
+
+Source: <https://docs.openwebui.com/getting-started/quick-start/>
+
+Command family:
+
+```bash
+docker run -d -p 3000:8080 --add-host=host.docker.internal:host-gateway -v open-webui:/app/backend/data --name open-webui --restart always ghcr.io/open-webui/open-webui:main
+```
+
+For NVIDIA GPU support, set `OPEN_WEBUI_GPU=1`; the installer uses the `:cuda` image and adds `--gpus all`.
 
 ## Telegram
 
