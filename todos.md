@@ -32,6 +32,7 @@ Casual parking lot for things to add, fix, or sanity-check while this installer 
 
 ## Installer Utility Ideas
 
+- [x] Continue through selected tasks after a task failure and summarize failed task ids at the end.
 - [ ] Add an uninstall mode that reverses anything the installer does where practical.
 - [ ] Add a reinstall mode for selected tasks.
 - [ ] Keep tightening idempotency so rerunning the script is boring in the best possible way.

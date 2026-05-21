@@ -6,6 +6,7 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 LOG_STAMP="$(date +%Y%m%d-%H%M%S)"
 LOG_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/ubuntu-system-setup"
 LOG_FILE="$LOG_DIR/install-$LOG_STAMP.log"
+APT_UPDATED_STAMP=""
 
 NVM_VERSION="${NVM_VERSION:-0.40.3}"
 MINICONDA_PREFIX="${MINICONDA_PREFIX:-$HOME/miniconda3}"
@@ -15,6 +16,8 @@ KANATA_UINPUT_GROUP="${KANATA_UINPUT_GROUP:-uinput}"
 COPYOUS_UUID="copyous@boerdereinar.dev"
 DEFAULT_OLLAMA_MODELS="glm-5.1:cloud kimi-k2.6:cloud gemini-3-flash-preview:cloud minimax-m2.7:cloud mistral-large-3:675b-cloud gemma4:31b-cloud qwen3.5:397b-cloud"
 OLLAMA_MODELS="${OLLAMA_MODELS-$DEFAULT_OLLAMA_MODELS}"
+OLLAMA_STARTUP_DELAY_SECONDS="${OLLAMA_STARTUP_DELAY_SECONDS:-3}"
+OLLAMA_STARTUP_WAIT_SECONDS="${OLLAMA_STARTUP_WAIT_SECONDS:-20}"
 OPEN_WEBUI_CONTAINER="${OPEN_WEBUI_CONTAINER:-open-webui}"
 OPEN_WEBUI_IMAGE="${OPEN_WEBUI_IMAGE:-ghcr.io/open-webui/open-webui:main}"
 OPEN_WEBUI_GPU_IMAGE="${OPEN_WEBUI_GPU_IMAGE:-ghcr.io/open-webui/open-webui:cuda}"
@@ -27,6 +30,8 @@ ONLY_TASKS=""
 LOG_READY=0
 
 declare -A SELECTED=()
+declare -a FAILED_TASKS=()
+declare -a FAILED_TASK_STATUSES=()
 APT_UPDATED=0
 
 TASK_ORDER=(
@@ -76,6 +81,8 @@ Environment:
   KANATA_SOURCE_FILE=./kanata-setup/kanata.kbd
   KANATA_UINPUT_GROUP=uinput
   OLLAMA_MODELS="glm-5.1:cloud kimi-k2.6:cloud ..."
+  OLLAMA_STARTUP_DELAY_SECONDS=3
+  OLLAMA_STARTUP_WAIT_SECONDS=20
   ALLOW_UNSUPPORTED_DOCKER_DESKTOP=1
   DOCKER_PASS_GPG_ID=<gpg-key-id>
   OPEN_WEBUI_PORT=3000
@@ -184,6 +191,7 @@ ensure_log_dir() {
 start_logging() {
   ensure_log_dir
   : > "$LOG_FILE"
+  APT_UPDATED_STAMP="$LOG_DIR/apt-updated-$LOG_STAMP"
   LOG_READY=1
   log "Logging command plan to $LOG_FILE"
 }
@@ -452,11 +460,15 @@ load_os_release() {
 }
 
 apt_update_once() {
-  if (( APT_UPDATED )); then
+  if (( APT_UPDATED )) || [[ -n "$APT_UPDATED_STAMP" && -f "$APT_UPDATED_STAMP" ]]; then
+    APT_UPDATED=1
     return
   fi
   run sudo apt-get update
   APT_UPDATED=1
+  if [[ -n "$APT_UPDATED_STAMP" ]]; then
+    : > "$APT_UPDATED_STAMP"
+  fi
 }
 
 apt_install() {
@@ -699,6 +711,7 @@ install_ollama() {
 
 pull_ollama_models() {
   local -a models
+  local -a failed_models=()
   local model
 
   if [[ -z "${OLLAMA_MODELS//[[:space:]]/}" ]]; then
@@ -710,13 +723,76 @@ pull_ollama_models() {
     has_command ollama || die "ollama was not found after installation."
   fi
 
+  if ! wait_for_ollama_server; then
+    warn "Could not connect to the Ollama server after installation; skipping configured model pulls for now."
+    warn "Once Ollama is running, rerun: ./install.sh --only ollama --yes"
+    return 0
+  fi
+
   local IFS=' '
   read -r -a models <<< "$OLLAMA_MODELS"
 
   for model in "${models[@]}"; do
     [[ -n "$model" ]] || continue
-    run ollama pull "$model"
+    if ! run ollama pull "$model"; then
+      warn "Ollama model pull failed: $model"
+      failed_models+=("$model")
+    fi
   done
+
+  if ((${#failed_models[@]})); then
+    warn "Failed Ollama model pulls: ${failed_models[*]}"
+    warn "The installer will continue. Retry failed pulls manually or rerun the ollama task later."
+  fi
+}
+
+normalize_seconds() {
+  local value="$1"
+  local fallback="$2"
+
+  if [[ "$value" =~ ^[0-9]+$ ]]; then
+    printf '%s' "$value"
+  else
+    warn "Invalid seconds value '$value'; using $fallback."
+    printf '%s' "$fallback"
+  fi
+}
+
+wait_for_ollama_server() {
+  if (( DRY_RUN )); then
+    return 0
+  fi
+
+  if ollama list >/dev/null 2>&1; then
+    return 0
+  fi
+
+  local delay wait_seconds deadline
+  delay="$(normalize_seconds "$OLLAMA_STARTUP_DELAY_SECONDS" 3)"
+  wait_seconds="$(normalize_seconds "$OLLAMA_STARTUP_WAIT_SECONDS" 20)"
+
+  if (( delay > 0 )); then
+    log "Waiting ${delay}s for Ollama service startup."
+    sleep "$delay"
+  fi
+
+  if ollama list >/dev/null 2>&1; then
+    return 0
+  fi
+
+  if has_command systemctl && systemctl list-unit-files ollama.service >/dev/null 2>&1; then
+    run_optional sudo systemctl start ollama.service
+  fi
+
+  deadline=$((SECONDS + wait_seconds))
+  while (( SECONDS < deadline )); do
+    if ollama list >/dev/null 2>&1; then
+      return 0
+    fi
+    sleep 1
+  done
+
+  return 1
 }
 
 ensure_npm_for_current_shell() {
@@ -1172,12 +1248,53 @@ run_task() {
 
 run_selected_tasks() {
   local task
+  local status
+
+  FAILED_TASKS=()
+  FAILED_TASK_STATUSES=()
+
   for task in "${TASK_ORDER[@]}"; do
     if is_selected "$task"; then
       log "Starting task: $task"
-      run_task "$task"
+      set +e
+      (
+        set -Eeuo pipefail
+        run_task "$task"
+      )
+      status=$?
+      set -Eeuo pipefail
+
+      if (( status == 130 || status == 143 )); then
+        die "Interrupted during task: $task"
+      fi
+
+      if (( status == 0 )); then
+        log "Finished task: $task"
+      else
+        FAILED_TASKS+=("$task")
+        FAILED_TASK_STATUSES+=("$status")
+        warn "Task failed with exit status $status: $task. Continuing with remaining selected tasks."
+      fi
     fi
   done
+}
+
+report_failed_tasks() {
+  local i
+  local failed_csv
+
+  if ((${#FAILED_TASKS[@]} == 0)); then
+    log "All selected tasks completed."
+    return 0
+  fi
+
+  warn "Installer completed with failed tasks:"
+  for i in "${!FAILED_TASKS[@]}"; do
+    warn "- ${FAILED_TASKS[$i]} (exit status ${FAILED_TASK_STATUSES[$i]})"
+  done
+  failed_csv="$(IFS=,; printf '%s' "${FAILED_TASKS[*]}")"
+  warn "Review the log at $LOG_FILE, then rerun failed tasks with: ./install.sh --only $failed_csv --yes"
+  return 1
 }
 
 post_install_notes() {
@@ -1221,6 +1338,7 @@ main() {
   sudo -v
   run_selected_tasks
   post_install_notes
+  report_failed_tasks
 }
 
 main "$@"

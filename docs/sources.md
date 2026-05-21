@@ -113,6 +113,8 @@ ollama pull qwen3.5:397b-cloud
 
 Override the default model list with `OLLAMA_MODELS="model-a model-b"`, or set `OLLAMA_MODELS=""` to skip model pulls.
 
+The installer waits briefly for the Ollama system service before pulling models. Model pull failures are logged as warnings so the rest of the desktop install can continue.
+
 ## OpenAI Codex CLI
 
 Source: <https://developers.openai.com/codex/cli/>
