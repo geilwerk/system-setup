@@ -46,7 +46,7 @@ Dependency-like items such as Node and Rust can be unchecked, but the installer 
 - Native Open WebUI experiments live in `extras`: `./extras/install-extras.sh` can install separate stable and latest systemd services with separate data directories.
 - Ollama pulls the configured cloud model list after install. Override with `OLLAMA_MODELS="model-a model-b"` or set `OLLAMA_MODELS=""` to skip pulls.
 - Conda is installed through the official Miniconda Linux installer at `~/miniconda3` by default. Override with `MINICONDA_PREFIX=/path/to/miniconda3`.
-- Kanata group changes require logging out and back in before the user service can fully work. The udev rule uses `KANATA_UINPUT_GROUP=uinput` by default; set `KANATA_UINPUT_GROUP=input` if that proves better on a 26.04 install.
+- Kanata group changes require logging out and back in before the user service can fully work. The service is enabled under `graphical-session.target` so it does not start GNOME's passive graphical target early. The udev rule uses `KANATA_UINPUT_GROUP=uinput` by default; set `KANATA_UINPUT_GROUP=input` if that proves better on a 26.04 install.
 - Flatpak/Flathub and GNOME Shell extension changes may also need a logout or reboot before GNOME Software and extensions notice everything.
 
 ## Layout
