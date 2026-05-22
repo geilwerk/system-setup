@@ -87,7 +87,7 @@ cargo install kanata
 install -D -m 0644 kanata-setup/kanata.kbd "$HOME/.config/kanata/kanata.kbd"
 ```
 
-The installer also sets up the Linux `uinput` permissions and a user systemd service. Kanata's current Linux setup docs use the `uinput` group in the udev rule, so the installer keeps that default while allowing `KANATA_UINPUT_GROUP=input` for Ubuntu 26.04 testing if the local device permissions need it.
+The installer also sets up the Linux `uinput` permissions and a user systemd service. Kanata's current Linux setup docs use the `uinput` group in the udev rule, so the installer keeps that default while allowing `KANATA_UINPUT_GROUP=input` for Ubuntu 26.04 testing if the local device permissions need it. The unit is installed under `graphical-session.target` with `PartOf=graphical-session.target`; it must not pull in the passive graphical session target from `default.target`.
 
 ## Ollama
 

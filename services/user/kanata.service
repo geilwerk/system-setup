@@ -1,8 +1,8 @@
 [Unit]
 Description=Kanata keyboard remapper
 Documentation=https://github.com/jtroo/kanata
+PartOf=graphical-session.target
 After=graphical-session.target
-Wants=graphical-session.target
 
 [Service]
 Type=simple
@@ -12,5 +12,4 @@ Restart=on-failure
 RestartSec=2
 
 [Install]
-WantedBy=default.target
-
+WantedBy=graphical-session.target

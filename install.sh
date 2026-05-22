@@ -694,9 +694,10 @@ install_kanata() {
 
   install_with_backup "$SCRIPT_DIR/services/user/kanata.service" "$HOME/.config/systemd/user/kanata.service" 0644
   run systemctl --user daemon-reload
+  run_optional systemctl --user disable kanata.service
   run systemctl --user enable kanata.service
 
-  warn "Kanata group changes require logging out and back in. The user service is enabled but not started automatically in this session."
+  warn "Kanata group changes require logging out and back in. The user service is enabled for graphical sessions but not started automatically in this session."
 }
 
 install_ollama() {

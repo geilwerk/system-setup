@@ -127,8 +127,8 @@ create_systemd_service() {
 [Unit]
 Description=Kanata keyboard remapper
 Documentation=https://github.com/jtroo/kanata
+PartOf=graphical-session.target
 After=graphical-session.target network-online.target
-Wants=graphical-session.target
 
 [Service]
 # Set a robust PATH for the service to find 'kanata' and other standard binaries.
@@ -140,7 +140,7 @@ ExecStart=/usr/bin/sh -c 'exec \$(which kanata) --cfg ${KANATA_CONFIG_FILE}'
 Restart=no
 
 [Install]
-WantedBy=default.target
+WantedBy=graphical-session.target
 EOF
 
     if [ $? -eq 0 ]; then
@@ -155,6 +155,7 @@ enable_and_start_service() {
     systemctl --user daemon-reload || log_error "Failed to reload systemd daemon."
 
     log_info "Enabling Kanata service to start at login..."
+    systemctl --user disable kanata.service || log_warn "Could not clear old Kanata service symlinks."
     systemctl --user enable kanata.service || log_error "Failed to enable Kanata service."
 
     log_info "Starting Kanata service now..."
