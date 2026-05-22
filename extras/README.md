@@ -30,6 +30,6 @@ MCPO_API_KEY="change-me" ./extras/install-extras.sh --only mcpo
 
 Notes:
 
-- The base installer still provides the Docker Open WebUI container path. This extras installer is for native/systemd experiments.
+- The base installer no longer provides the Docker Open WebUI container path. This extras installer is the preferred Open WebUI path.
 - The stable Open WebUI service does not auto-update on restart. Rerun the extras installer or use `uv tool upgrade open-webui` when you intentionally want to move it.
 - The latest Open WebUI service resolves `open-webui@latest` through `uvx` when the service starts, so keep its data directory separate from the stable service.

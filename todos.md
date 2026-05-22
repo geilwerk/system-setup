@@ -26,7 +26,7 @@ Casual parking lot for things to add, fix, or sanity-check while this installer 
 
 ## Extras Follow-Ups
 
-- [ ] Decide whether native Open WebUI should stay as two services, or whether Docker should remain the only everyday Open WebUI path.
+- [x] Use uv/uvx native Open WebUI services instead of Docker for the everyday Open WebUI path.
 - [ ] Decide whether `mcpo` and Open Terminal are still useful now that Open WebUI has native MCP support.
 - [ ] Add uninstall/disable helpers for extras services once the VM shape settles.
 

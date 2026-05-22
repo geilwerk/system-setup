@@ -299,21 +299,17 @@ The installer assumes NVIDIA drivers are already handled elsewhere, matching the
 
 Source: <https://docs.openwebui.com/getting-started/quick-start/>
 
-Command family:
-
-```bash
-docker run -d -p 3000:8080 --add-host=host.docker.internal:host-gateway -v open-webui:/app/backend/data --name open-webui --restart always ghcr.io/open-webui/open-webui:main
-```
-
-For NVIDIA GPU support, set `OPEN_WEBUI_GPU=1`; the installer uses the `:cuda` image and adds `--gpus all`.
-
-The optional extras installer also supports native Open WebUI services. The upstream quick start documents the uv path as:
+The base installer intentionally does not install Open WebUI as a Docker container anymore. Native uv/uvx services live in the optional extras installer. The upstream quick start documents the uv path as:
 
 ```bash
 DATA_DIR=~/.open-webui uvx --python 3.11 open-webui@latest serve
 ```
 
 The extras installer uses that command family for `open-webui-latest.service`, and uses `uv tool install open-webui` for a separate `open-webui-stable.service` that does not auto-resolve `@latest` on every service start.
+
+```bash
+./extras/install-extras.sh --only open_webui_stable,open_webui_latest
+```
 
 ## mcpo
 

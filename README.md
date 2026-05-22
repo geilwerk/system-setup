@@ -43,8 +43,8 @@ Dependency-like items such as Node and Rust can be unchecked, but the installer 
 - Docker Desktop setup now installs KVM/QEMU prerequisites, adds the user to `kvm`, installs `pass`, and can initialize `pass` when `DOCKER_PASS_GPG_ID` is provided.
 - If Docker Desktop still silently fails from the app launcher, run `./scripts/docker-desktop-debug.sh` for service logs and KVM checks.
 - Docker Engine and Docker Desktop can coexist, but Docker recommends stopping Engine while using Desktop if ports or resources get weird: `sudo systemctl stop docker docker.socket containerd`.
-- Open WebUI is installed as a Docker container at `http://localhost:3000` by default. Set `OPEN_WEBUI_GPU=1` to use the CUDA image.
-- Native Open WebUI experiments live in `extras`: `./extras/install-extras.sh` can install separate stable and latest systemd services with separate data directories.
+- Open WebUI is no longer installed as a Docker container by the base installer.
+- Native Open WebUI lives in `extras`: `./extras/install-extras.sh` can install separate stable and latest uv/uvx systemd services with separate data directories.
 - Ollama waits briefly for its service before pulling the configured cloud model list. Override with `OLLAMA_MODELS="model-a model-b"` or set `OLLAMA_MODELS=""` to skip pulls.
 - Conda is installed through the official Miniconda Linux installer at `~/miniconda3` by default. Override with `MINICONDA_PREFIX=/path/to/miniconda3`.
 - Kanata group changes require logging out and back in before the user service can fully work. The service is enabled under `graphical-session.target` so it does not start GNOME's passive graphical target early. The udev rule uses `KANATA_UINPUT_GROUP=uinput` by default; set `KANATA_UINPUT_GROUP=input` if that proves better on a 26.04 install.

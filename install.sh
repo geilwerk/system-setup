@@ -18,10 +18,6 @@ DEFAULT_OLLAMA_MODELS="glm-5.1:cloud kimi-k2.6:cloud gemini-3-flash-preview:clou
 OLLAMA_MODELS="${OLLAMA_MODELS-$DEFAULT_OLLAMA_MODELS}"
 OLLAMA_STARTUP_DELAY_SECONDS="${OLLAMA_STARTUP_DELAY_SECONDS:-3}"
 OLLAMA_STARTUP_WAIT_SECONDS="${OLLAMA_STARTUP_WAIT_SECONDS:-20}"
-OPEN_WEBUI_CONTAINER="${OPEN_WEBUI_CONTAINER:-open-webui}"
-OPEN_WEBUI_IMAGE="${OPEN_WEBUI_IMAGE:-ghcr.io/open-webui/open-webui:main}"
-OPEN_WEBUI_GPU_IMAGE="${OPEN_WEBUI_GPU_IMAGE:-ghcr.io/open-webui/open-webui:cuda}"
-OPEN_WEBUI_PORT="${OPEN_WEBUI_PORT:-3000}"
 
 DRY_RUN=0
 NO_TUI=0
@@ -57,7 +53,6 @@ TASK_ORDER=(
   nvidia_container_toolkit
   docker_desktop
   docker_desktop_pass
-  open_webui
   telegram
 )
 
@@ -85,8 +80,6 @@ Environment:
   OLLAMA_STARTUP_WAIT_SECONDS=20
   ALLOW_UNSUPPORTED_DOCKER_DESKTOP=1
   DOCKER_PASS_GPG_ID=<gpg-key-id>
-  OPEN_WEBUI_PORT=3000
-  OPEN_WEBUI_GPU=1
 EOF
 }
 
@@ -114,7 +107,6 @@ docker_engine        Docker Engine official apt repository.
 nvidia_container_toolkit  NVIDIA Container Toolkit for Docker GPU containers.
 docker_desktop       Docker Desktop deb, supported on Ubuntu 26.04/24.04.
 docker_desktop_pass  Install pass and optionally initialize Docker Desktop credentials.
-open_webui           Open WebUI Docker container.
 telegram             Telegram Desktop from Flathub.
 EOF
 }
@@ -339,13 +331,12 @@ select_with_tui() {
 
   select_category \
     "Ubuntu Setup: Containers and GitHub" \
-    "Docker Desktop now includes KVM/pass helpers. Open WebUI needs Docker running." \
+    "Docker Desktop now includes KVM/pass helpers. Open WebUI native services live in extras." \
     "gh" "GitHub CLI official apt repository" ON \
     "docker_engine" "Docker Engine official apt repository" ON \
     "nvidia_container_toolkit" "NVIDIA Container Toolkit for Docker GPU containers" ON \
     "docker_desktop" "Docker Desktop deb plus KVM prerequisites" ON \
-    "docker_desktop_pass" "Docker Desktop pass credential helper" ON \
-    "open_webui" "Open WebUI Docker container" ON
+    "docker_desktop_pass" "Docker Desktop pass credential helper" ON
 }
 
 selected_tasks_string() {
@@ -414,9 +405,6 @@ dependency_warnings() {
   fi
   if is_selected nvidia_container_toolkit && ! is_selected docker_engine && ! has_command docker; then
     warnings+=("NVIDIA Container Toolkit is selected, but Docker is not selected and docker was not found.")
-  fi
-  if is_selected open_webui && ! is_selected docker_engine && ! is_selected docker_desktop && ! has_command docker; then
-    warnings+=("Open WebUI is selected, but no Docker install task is selected and docker was not found.")
   fi
 
   if ((${#warnings[@]} == 0)); then
@@ -1149,68 +1137,6 @@ install_nvidia_container_toolkit() {
   fi
 }
 
-docker_exec_quiet() {
-  if docker info >/dev/null 2>&1; then
-    docker "$@" >/dev/null 2>&1
-  elif sudo docker info >/dev/null 2>&1; then
-    sudo docker "$@" >/dev/null 2>&1
-  else
-    return 1
-  fi
-}
-
-docker_exec() {
-  if docker info >/dev/null 2>&1; then
-    run docker "$@"
-  elif sudo docker info >/dev/null 2>&1; then
-    run sudo docker "$@"
-  else
-    warn "Docker is installed but not reachable. Log out/in for docker group changes, start Docker Desktop, or start Docker Engine."
-    return 1
-  fi
-}
-
-install_open_webui() {
-  if ! has_command docker; then
-    warn "docker command was not found. Select Docker Engine or Docker Desktop first, then rerun open_webui."
-    return
-  fi
-
-  if ! docker_exec_quiet info; then
-    warn "Docker is not reachable yet. If Docker was just installed, log out/in or start Docker Desktop, then rerun open_webui."
-    return
-  fi
-
-  local image
-  image="$OPEN_WEBUI_IMAGE"
-
-  local -a run_args=(
-    -d
-    -p "$OPEN_WEBUI_PORT:8080"
-    --add-host=host.docker.internal:host-gateway
-    -v open-webui:/app/backend/data
-    --name "$OPEN_WEBUI_CONTAINER"
-    --restart always
-  )
-
-  if [[ "${OPEN_WEBUI_GPU:-0}" == "1" ]]; then
-    image="$OPEN_WEBUI_GPU_IMAGE"
-    run_args+=(--gpus all)
-  fi
-
-  if docker_exec_quiet container inspect "$OPEN_WEBUI_CONTAINER"; then
-    log "Open WebUI container '$OPEN_WEBUI_CONTAINER' already exists."
-    docker_exec start "$OPEN_WEBUI_CONTAINER"
-    warn "Open WebUI should be available at http://localhost:$OPEN_WEBUI_PORT if the container started cleanly."
-    return
-  fi
-
-  docker_exec pull "$image"
-  run_args+=("$image")
-  docker_exec run "${run_args[@]}"
-  warn "Open WebUI should be available at http://localhost:$OPEN_WEBUI_PORT."
-}
-
 install_telegram() {
   ensure_flatpak_available
   run flatpak install -y flathub org.telegram.desktop
@@ -1241,7 +1167,6 @@ run_task() {
     nvidia_container_toolkit) install_nvidia_container_toolkit ;;
     docker_desktop) install_docker_desktop ;;
     docker_desktop_pass) install_docker_desktop_pass ;;
-    open_webui) install_open_webui ;;
     telegram) install_telegram ;;
     *) die "Unknown task id: $task" ;;
   esac
@@ -1308,7 +1233,7 @@ Post-install notes:
 - Open a new terminal for conda initialization to take effect.
 - If Docker Desktop does not appear, try: systemctl --user start docker-desktop
 - For Docker Desktop logs, run: ./scripts/docker-desktop-debug.sh
-- Open WebUI runs at http://localhost:3000 by default after its container starts.
+- Open WebUI native services live in extras: ./extras/install-extras.sh
 - Letta code is intentionally not included here; use the separate installer script.
 EOF
 }
